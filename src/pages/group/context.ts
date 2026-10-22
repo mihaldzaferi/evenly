@@ -6,6 +6,8 @@ export interface GroupContext {
   group: Group
   openExpense: (expense?: Expense) => void
   openPayment: (opts?: { settlement?: Settlement; prefill?: Transfer }) => void
+  /** The "Pay Ben NOK 54.77" sheet for a payment you need to make. */
+  openPay: (transfer: Transfer) => void
 }
 
 export const useGroupContext = () => useOutletContext<GroupContext>()

@@ -2,6 +2,7 @@ import { Archive, ChevronLeft, HandCoins, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useParams } from 'react-router'
 import { ExpenseDialog } from '../../components/ExpenseDialog'
+import { PayDialog } from '../../components/PayDialog'
 import { AvatarStack } from '../../components/MemberChip'
 import { Money } from '../../components/Money'
 import { SettlementDialog } from '../../components/SettlementDialog'
@@ -14,6 +15,7 @@ import type { GroupContext } from './context'
 type Dialog =
   | { kind: 'expense'; expense?: Expense }
   | { kind: 'payment'; settlement?: Settlement; prefill?: Transfer }
+  | { kind: 'pay'; transfer: Transfer }
 
 const TABS = [
   { to: '.', label: 'Overview', end: true },
@@ -48,6 +50,7 @@ export function GroupPage() {
     group,
     openExpense: (expense) => setDialog({ kind: 'expense', expense }),
     openPayment: (opts) => setDialog({ kind: 'payment', ...opts }),
+    openPay: (transfer) => setDialog({ kind: 'pay', transfer }),
   }
 
   return (
@@ -123,6 +126,7 @@ export function GroupPage() {
       {dialog?.kind === 'expense' && (
         <ExpenseDialog group={group} expense={dialog.expense} onClose={() => setDialog(null)} />
       )}
+      {dialog?.kind === 'pay' && <PayDialog group={group} transfer={dialog.transfer} onClose={() => setDialog(null)} />}
       {dialog?.kind === 'payment' && (
         <SettlementDialog
           group={group}

@@ -33,7 +33,8 @@ interface State {
   loadDemo: () => ID[]
 
   addMember: (groupId: ID, name: string) => Member
-  renameMember: (groupId: ID, memberId: ID, name: string) => void
+  /** Changes a member's name or payment details. */
+  updateMember: (groupId: ID, memberId: ID, patch: Partial<Omit<Member, 'id'>>) => void
   /** Only succeeds for members with no expenses or payments. */
   removeMember: (groupId: ID, memberId: ID) => boolean
 
@@ -110,8 +111,8 @@ export const useStore = create<State>()(
           change(groupId, (g) => ({ ...g, members: [...g.members, member] }))
           return member
         },
-        renameMember: (groupId, memberId, name) =>
-          change(groupId, (g) => ({ ...g, members: g.members.map((m) => (m.id === memberId ? { ...m, name } : m)) })),
+        updateMember: (groupId, memberId, patch) =>
+          change(groupId, (g) => ({ ...g, members: g.members.map((m) => (m.id === memberId ? { ...m, ...patch } : m)) })),
         removeMember: (groupId, memberId) => {
           const group = get().groups.find((g) => g.id === groupId)
           if (!group || !memberIsUnused(group, memberId)) return false

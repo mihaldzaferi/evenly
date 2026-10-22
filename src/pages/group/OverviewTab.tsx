@@ -1,4 +1,4 @@
-import { ArrowRight, Check, ChevronDown, CircleCheck, HandCoins, PartyPopper, Plus, Receipt } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, CircleCheck, HandCoins, PartyPopper, Plus, Receipt, Send } from 'lucide-react'
 import { Link } from 'react-router'
 import { Avatar } from '../../components/Avatar'
 import { BalanceReceipt } from '../../components/BalanceReceipt'
@@ -10,6 +10,7 @@ import { formatDay, today } from '../../lib/dates'
 import { newId } from '../../lib/ids'
 import { memberLookup } from '../../lib/members'
 import { formatMoney } from '../../lib/money'
+import { formatPhone, reminderText } from '../../lib/payments'
 import type { Group, Transfer } from '../../lib/types'
 import { toast } from '../../store/toast'
 import { useStore } from '../../store/useStore'
@@ -17,8 +18,9 @@ import { useGroupContext } from './context'
 
 /**
  * The group at a glance, top to bottom:
- * 1. where you stand, 2. payments still needed, 3. everyone's balance,
- * 4. payments already made.
+ * 1. where you stand, with a Pay button per person you owe,
+ * 2. payments the rest of the group still needs to make,
+ * 3. everyone's balance, 4. payments already made.
  */
 export function OverviewTab() {
   const { group, openExpense } = useGroupContext()
@@ -45,7 +47,7 @@ export function OverviewTab() {
   return (
     <div className="space-y-6">
       {me ? <YourBalance group={group} me={me} transfers={transfers} /> : <WhoAreYou group={group} />}
-      <PaymentsNeeded group={group} transfers={transfers} />
+      <GroupPayments group={group} transfers={transfers} />
       <Everyone group={group} summary={summary} />
       <PaymentsMade group={group} />
     </div>
@@ -64,6 +66,7 @@ function WhoAreYou({ group }: { group: Group }) {
 }
 
 function YourBalance({ group, me, transfers }: { group: Group; me: MemberSummary; transfers: Transfer[] }) {
+  const { openPay } = useGroupContext()
   const updateGroup = useStore((s) => s.updateGroup)
   const who = memberLookup(group)
   const cur = group.currency
@@ -71,83 +74,169 @@ function YourBalance({ group, me, transfers }: { group: Group; me: MemberSummary
   const toPay = transfers.filter((t) => t.from === me.id)
   const toGet = transfers.filter((t) => t.to === me.id)
 
-  // One plain sentence that says what, if anything, you need to do.
-  const next =
-    toPay.length === 1
-      ? `Pay ${name(toPay[0].to)} ${formatMoney(toPay[0].amount, cur)} to settle up.`
-      : toPay.length > 1
-        ? `Pay ${toPay.map((t) => `${name(t.to)} ${formatMoney(t.amount, cur)}`).join(' and ')} to settle up.`
-        : toGet.length === 1
-          ? `${name(toGet[0].from)} should pay you ${formatMoney(toGet[0].amount, cur)}.`
-          : toGet.length > 1
-            ? `${toGet.map((t) => name(t.from)).join(' and ')} should pay you back. See below.`
-            : 'Nothing left for you to pay or collect.'
-
   return (
     <section className="card overflow-hidden">
-      <div className="grid gap-6 p-5 sm:grid-cols-[1fr_21rem] sm:p-6">
-        <div>
-          <p className="flex items-center gap-2 text-[13px] text-muted">
-            Your balance
-            <span aria-hidden>·</span>
-            <span className="flex items-center gap-1.5 text-ink-2">
-              <Avatar name={name(me.id)} index={who(me.id).index} size={18} />
-              {name(me.id)}
+      <div className="p-5 sm:p-6">
+        <p className="flex items-center gap-2 text-[13px] text-muted">
+          Your balance
+          <span aria-hidden>·</span>
+          <span className="flex items-center gap-1.5 text-ink-2">
+            <Avatar name={name(me.id)} index={who(me.id).index} size={18} />
+            {name(me.id)}
+          </span>
+          <button className="text-accent-text hover:underline" onClick={() => updateGroup(group.id, { meId: undefined })}>
+            Not you?
+          </button>
+        </p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight">
+          {me.net < 0 ? (
+            <>
+              You owe <Money amount={-me.net} currency={cur} className="text-neg-text" />
+            </>
+          ) : me.net > 0 ? (
+            <>
+              You’re owed <Money amount={me.net} currency={cur} className="text-pos-text" />
+            </>
+          ) : (
+            <span className="flex items-center gap-2">
+              <CircleCheck className="size-7 text-pos-text" /> You’re settled up
             </span>
-            <button className="text-accent-text hover:underline" onClick={() => updateGroup(group.id, { meId: undefined })}>
-              Not you?
-            </button>
-          </p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight">
-            {me.net < 0 ? (
-              <>
-                You owe <Money amount={-me.net} currency={cur} className="text-neg-text" />
-              </>
-            ) : me.net > 0 ? (
-              <>
-                You’re owed <Money amount={me.net} currency={cur} className="text-pos-text" />
-              </>
-            ) : (
-              <span className="flex items-center gap-2">
-                <CircleCheck className="size-7 text-pos-text" /> You’re settled up
-              </span>
-            )}
-          </p>
-          <p className="mt-2 text-[15px] text-ink-2">{next}</p>
-        </div>
-        <div className="rounded-xl bg-surface-2/70 p-4">
-          <BalanceReceipt
-            summary={me}
-            currency={cur}
-            you
-            paidLink={(children) => (
-              <Link to={`expenses?paidBy=${me.id}`} className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">
-                {children}
-              </Link>
-            )}
-          />
-        </div>
+          )}
+        </h2>
+        {toPay.length === 0 && toGet.length === 0 && <p className="mt-2 text-[15px] text-ink-2">Nothing left for you to pay or collect.</p>}
       </div>
+
+      {toPay.length > 0 && (
+        <div className="border-t border-line">
+          <h3 className="px-5 pt-4 text-[13px] font-medium text-ink-2 sm:px-6">You need to pay</h3>
+          <ul className="divide-y divide-line">
+            {toPay.map((t) => {
+              const { member, index } = who(t.to)
+              return (
+                <li key={t.to} className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+                  <Avatar name={member.name} index={index} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{member.name}</p>
+                    <p className="num truncate text-[13px] text-muted">
+                      {member.phone ? `Vipps ${formatPhone(member.phone)}` : member.paypal ? 'PayPal' : member.account ? 'Bank transfer' : 'No details yet'}
+                    </p>
+                  </div>
+                  <Money amount={t.amount} currency={cur} className="text-lg font-semibold" />
+                  <button className="btn btn-primary min-w-20" onClick={() => openPay(t)} aria-label={`Pay ${member.name} ${formatMoney(t.amount, cur)}`}>
+                    Pay
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      {toGet.length > 0 && (
+        <div className="border-t border-line">
+          <h3 className="px-5 pt-4 text-[13px] font-medium text-ink-2 sm:px-6">Waiting for</h3>
+          <ul className="divide-y divide-line">
+            {toGet.map((t) => (
+              <IncomingRow key={t.from} group={group} transfer={t} />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <details className="group/how border-t border-line">
+        <summary className="flex list-none items-center justify-between px-5 py-3 text-[13px] font-medium text-accent-text hover:bg-surface-2/60 sm:px-6 [&::-webkit-details-marker]:hidden">
+          How is this worked out?
+          <ChevronDown className="size-4 transition-transform group-open/how:rotate-180" aria-hidden />
+        </summary>
+        <div className="px-5 pb-5 sm:px-6">
+          <div className="max-w-sm rounded-xl bg-surface-2/70 p-4">
+            <BalanceReceipt
+              summary={me}
+              currency={cur}
+              you
+              paidLink={(children) => (
+                <Link to={`expenses?paidBy=${me.id}`} className="underline decoration-line-strong underline-offset-2 hover:decoration-ink">
+                  {children}
+                </Link>
+              )}
+            />
+          </div>
+        </div>
+      </details>
     </section>
   )
 }
 
-function PaymentsNeeded({ group, transfers }: { group: Group; transfers: Transfer[] }) {
+/** Someone who owes you: nudge them, or tick it off when the money arrives. */
+function IncomingRow({ group, transfer: t }: { group: Group; transfer: Transfer }) {
+  const saveSettlement = useStore((s) => s.saveSettlement)
+  const deleteSettlement = useStore((s) => s.deleteSettlement)
+  const who = memberLookup(group)
+  const { member, index } = who(t.from)
   const cur = group.currency
+
+  async function remind() {
+    const text = reminderText({
+      to: member.name,
+      groupName: group.name,
+      amount: t.amount,
+      currency: cur,
+      myPhone: group.members.find((m) => m.id === group.meId)?.phone,
+    })
+    if (navigator.share) {
+      // Cancelling the share sheet rejects; that's fine.
+      await navigator.share({ text }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(text)
+      toast('Reminder copied. Paste it into a message.')
+    }
+  }
+
+  function markReceived() {
+    const id = newId()
+    saveSettlement(group.id, { id, ...t, date: today(), note: 'Settled up' })
+    toast(`${member.name} paid you ${formatMoney(t.amount, cur)}`, { label: 'Undo', run: () => deleteSettlement(group.id, id) })
+  }
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-5 py-3.5 sm:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <Avatar name={member.name} index={index} size={40} />
+        <div className="min-w-0">
+          <p className="truncate font-medium">{member.name}</p>
+          <p className="text-[13px] text-muted">owes you</p>
+        </div>
+      </div>
+      <Money amount={t.amount} currency={cur} className="text-lg font-semibold" />
+      <div className="flex w-full justify-end gap-1.5 sm:w-auto">
+        <button className="btn btn-ghost btn-sm" onClick={remind}>
+          <Send className="size-3.5" /> Remind
+        </button>
+        <button className="btn btn-secondary btn-sm" onClick={markReceived}>
+          <Check className="size-3.5" /> Mark received
+        </button>
+      </div>
+    </li>
+  )
+}
+
+/** Payments the rest of the group still has to make, plus overall progress. */
+function GroupPayments({ group, transfers }: { group: Group; transfers: Transfer[] }) {
+  const cur = group.currency
+  const knowsMe = group.members.some((m) => m.id === group.meId)
+  const listed = knowsMe ? transfers.filter((t) => !isMine(group, t)) : transfers
   const left = transfers.reduce((sum, t) => sum + t.amount, 0)
   const paidBack = group.settlements.reduce((sum, s) => sum + s.amount, 0)
   const progress = paidBack + left > 0 ? paidBack / (paidBack + left) : 1
-  // Your own payments first.
-  const mineFirst = [...transfers].sort((a, b) => Number(isMine(group, b)) - Number(isMine(group, a)))
 
   return (
     <section className="card overflow-hidden">
       <div className="px-5 pt-5 pb-4 sm:px-6">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold">Payments needed</h2>
+        <div className="flex flex-col gap-x-3 gap-y-0.5 sm:flex-row sm:items-baseline sm:justify-between">
+          <h2 className="font-semibold">{knowsMe ? 'Payments between others' : 'Payments needed'}</h2>
           {transfers.length > 0 && (
             <p className="text-[13px] text-muted">
-              {transfers.length} left · <Money amount={left} currency={cur} />
+              {transfers.length} left in the group · <Money amount={left} currency={cur} />
             </p>
           )}
         </div>
@@ -170,10 +259,12 @@ function PaymentsNeeded({ group, transfers }: { group: Group; transfers: Transfe
             Nobody owes anything right now. New expenses will show up here as payments to make.
           </EmptyState>
         </div>
+      ) : listed.length === 0 ? (
+        <p className="border-t border-line px-5 py-4 text-sm text-muted sm:px-6">Everyone else is settled up. Only your payments are left.</p>
       ) : (
         <>
           <ul className="divide-y divide-line border-t border-line">
-            {mineFirst.map((t) => (
+            {listed.map((t) => (
               <TransferRow key={`${t.from}-${t.to}`} group={group} transfer={t} />
             ))}
           </ul>

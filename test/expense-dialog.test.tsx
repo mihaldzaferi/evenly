@@ -1,18 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ExpenseDialog } from '../src/components/ExpenseDialog'
 import { useStore } from '../src/store/useStore'
-
-beforeAll(() => {
-  // jsdom has no modal dialogs yet; this is enough for the component to render.
-  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-    this.open = true
-  }
-  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-    this.open = false
-  }
-})
 
 let groupId = ''
 beforeEach(() => {

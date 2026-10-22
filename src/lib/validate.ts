@@ -1,5 +1,6 @@
 import { CATEGORIES } from './categories'
 import { isISODate } from './dates'
+import { normalizePaypal, normalizePhone } from './payments'
 import { checkSplit } from './split'
 import type { CategoryId, Expense, Group, Member, Settlement, SplitMode } from './types'
 
@@ -22,6 +23,11 @@ const optStr = (v: unknown, what: string, max = 1000): string | undefined =>
 const int = (v: unknown, what: string): number =>
   Number.isSafeInteger(v) && (v as number) >= 0 ? (v as number) : fail(`${what} must be a whole, positive number.`)
 const date = (v: unknown, what: string): string => (isISODate(v) ? v : fail(`${what} is not a valid date.`))
+/** Optional payment details are dropped, not rejected, when they look wrong. */
+const payDetail = (v: unknown, clean: (v: string) => string): string | undefined => {
+  if (typeof v !== 'string' || v.length > 60) return undefined
+  return clean(v) || undefined
+}
 const currency = (v: unknown): string =>
   typeof v === 'string' && /^[A-Z]{3}$/.test(v) ? v : fail('Currency must be a 3-letter code like EUR.')
 
@@ -35,7 +41,13 @@ export function parseGroup(input: unknown): Group {
   const members: Member[] = Array.isArray(input.members)
     ? input.members.map((m, i) => {
         if (!isObj(m)) fail(`Member ${i + 1} is invalid.`)
-        return { id: str(m.id, 'Member id', 64), name: str(m.name, 'Member name', 60) }
+        return {
+          id: str(m.id, 'Member id', 64),
+          name: str(m.name, 'Member name', 60),
+          phone: payDetail(m.phone, normalizePhone),
+          paypal: payDetail(m.paypal, normalizePaypal),
+          account: payDetail(m.account, (v) => v.trim()),
+        }
       })
     : fail('The group has no members list.')
   const ids = new Set(members.map((m) => m.id))

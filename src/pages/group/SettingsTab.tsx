@@ -1,12 +1,14 @@
-import { Archive, ArchiveRestore, Check, Copy, FileJson, FileSpreadsheet, Link2, Share2, Trash2, UserPlus, X } from 'lucide-react'
+import { Archive, ArchiveRestore, Check, ChevronDown, Copy, FileJson, FileSpreadsheet, Link2, Share2, Trash2, UserPlus, Wallet, X } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { Avatar } from '../../components/Avatar'
 import { CurrencySelect } from '../../components/CurrencySelect'
 import { EmojiField } from '../../components/EmojiField'
+import { PaymentDetailsForm } from '../../components/PaymentDetailsForm'
 import { memberIsUnused } from '../../lib/balances'
 import { groupToCsv } from '../../lib/csv'
 import { downloadFile, slug } from '../../lib/download'
+import { formatPhone } from '../../lib/payments'
 import { encodeGroup, shareUrl } from '../../lib/share'
 import type { Group } from '../../lib/types'
 import { toast } from '../../store/toast'
@@ -100,7 +102,7 @@ function Details({ group }: { group: Group }) {
 
 function People({ group }: { group: Group }) {
   const addMember = useStore((s) => s.addMember)
-  const renameMember = useStore((s) => s.renameMember)
+  const updateMember = useStore((s) => s.updateMember)
   const removeMember = useStore((s) => s.removeMember)
   const [newName, setNewName] = useState('')
   const taken = (name: string, except?: string) =>
@@ -116,33 +118,49 @@ function People({ group }: { group: Group }) {
   }
 
   return (
-    <Card title="People" description="People with expenses or payments can’t be removed, so balances stay correct.">
+    <Card
+      title="People"
+      description="Add how each person wants to be paid, so the Pay button has their Vipps number ready. People with expenses or payments can’t be removed."
+    >
       <ul className="space-y-2">
         {group.members.map((m, i) => {
           const removable = memberIsUnused(group, m.id) && group.members.length > 1
+          const details = [m.phone && `Vipps ${formatPhone(m.phone)}`, m.paypal && 'PayPal', m.account && 'Bank'].filter(Boolean).join(' · ')
           return (
-            <li key={m.id} className="flex items-center gap-2">
-              <Avatar name={m.name} index={i} size={32} />
-              <input
-                aria-label={`Name of ${m.name}`}
-                className="field"
-                defaultValue={m.name}
-                maxLength={60}
-                onBlur={(e) => {
-                  const name = e.target.value.trim()
-                  if (!name || taken(name, m.id)) e.target.value = m.name
-                  else if (name !== m.name) renameMember(group.id, m.id, name)
-                }}
-              />
-              <button
-                className="btn btn-ghost btn-icon"
-                disabled={!removable}
-                aria-label={`Remove ${m.name}`}
-                title={removable ? `Remove ${m.name}` : `${m.name} has expenses or payments`}
-                onClick={() => removeMember(group.id, m.id) && toast(`Removed ${m.name}`)}
-              >
-                <X className="size-4" />
-              </button>
+            <li key={m.id} className="rounded-xl border border-line">
+              <div className="flex items-center gap-2 p-2">
+                <Avatar name={m.name} index={i} size={32} />
+                <input
+                  aria-label={`Name of ${m.name}`}
+                  className="field"
+                  defaultValue={m.name}
+                  maxLength={60}
+                  onBlur={(e) => {
+                    const name = e.target.value.trim()
+                    if (!name || taken(name, m.id)) e.target.value = m.name
+                    else if (name !== m.name) updateMember(group.id, m.id, { name })
+                  }}
+                />
+                <button
+                  className="btn btn-ghost btn-icon"
+                  disabled={!removable}
+                  aria-label={`Remove ${m.name}`}
+                  title={removable ? `Remove ${m.name}` : `${m.name} has expenses or payments`}
+                  onClick={() => removeMember(group.id, m.id) && toast(`Removed ${m.name}`)}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <details className="group/pay border-t border-line">
+                <summary className="flex list-none items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-2/60 [&::-webkit-details-marker]:hidden">
+                  <Wallet className="size-3.5 text-muted" />
+                  <span className={details ? 'num text-ink-2' : 'text-accent-text'}>{details || 'Add payment details'}</span>
+                  <ChevronDown className="ml-auto size-3.5 text-muted transition-transform group-open/pay:rotate-180" />
+                </summary>
+                <div className="border-t border-line p-3">
+                  <PaymentDetailsForm group={group} member={m} />
+                </div>
+              </details>
             </li>
           )
         })}
@@ -179,7 +197,7 @@ function Share({ group }: { group: Group }) {
   return (
     <Card
       title="Share"
-      description="Send the whole group as a link. Whoever opens it can add it to their own device. Nothing is uploaded: the data is inside the link itself."
+      description="Send the whole group as a link, including people’s payment details. Whoever opens it can add it to their own device. Nothing is uploaded: the data is inside the link itself."
     >
       {link && !stale ? (
         <div className="space-y-3">

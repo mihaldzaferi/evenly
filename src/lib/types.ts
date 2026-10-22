@@ -9,6 +9,12 @@ export type ID = string
 export interface Member {
   id: ID
   name: string
+  /** Mobile number, for Vipps / MobilePay. */
+  phone?: string
+  /** PayPal.me username. */
+  paypal?: string
+  /** Bank account number or IBAN. */
+  account?: string
 }
 
 export type SplitMode = 'equal' | 'exact' | 'percent' | 'shares'

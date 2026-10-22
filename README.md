@@ -13,9 +13,15 @@ browser, and groups are shared as self-contained links.
 ## Features
 
 - **Always know where you stand.** The Overview leads with one line, like
-  "You're owed NOK 3,267.54. Chloé should pay you", and a receipt-style
-  breakdown of how that number adds up. Below it are the payments still
-  needed, everyone's balance, and the payments already made.
+  "You owe NOK 5,417.11", then lists each person you need to pay, with a
+  **Pay** button, and everyone who owes you, with **Remind** and **Mark
+  received** buttons. A receipt-style breakdown shows how the number adds up.
+- **Pay in a couple of taps.** Pay opens a sheet with the exact amount
+  already worked out. *Copy amount & open Vipps* puts the amount on your
+  clipboard and opens Vipps, ready to paste. A PayPal.me link opens PayPal
+  with the amount filled in, and bank details are one tap to copy. Press
+  *I've paid* when it's sent, and everyone's balance updates. (Evenly never
+  touches money itself; see [Payments](#payments).)
 - **Four ways to split.** Equally, by exact amounts, by percentage, or by
   shares ("2 shares for the double room, 1 for a single"), with a live
   preview of what each person owes.
@@ -84,6 +90,27 @@ and base64url-encoded. The example trip, with 14 expenses, fits in about
 sent to any server. On import, the data is checked field by field
 ([`src/lib/validate.ts`](src/lib/validate.ts)), so a hand-edited link can't
 break your balances.
+
+## Payments
+
+Evenly works out *who should pay whom and how much*, then hands you over to
+the app you already use to send it:
+
+| Method | What the Pay button does |
+| --- | --- |
+| Vipps | Copies the amount the way your phone types it (`5417,11` in Norway) and, on a phone, opens the Vipps app; shows the person's number to pick |
+| PayPal | Opens `paypal.me/<name>/<amount><currency>` with the amount filled in |
+| Bank transfer | Copies the account number and the amount |
+
+Each person adds their own details under *Settings → People*, or straight
+from the Pay sheet. They travel with share links so the whole group has them.
+
+Why not send the money straight from the page? A website can't move money
+between two people without being a licensed payment provider. Vipps only
+offers its payment API to registered businesses, and there's no public link
+that fills in a person and an amount. Apple Pay on the web only pays
+merchants, and person-to-person Apple Cash exists only in the US. So Evenly
+does everything up to the transfer and records it once you confirm.
 
 ## Tech stack
 
