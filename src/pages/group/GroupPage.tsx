@@ -16,8 +16,8 @@ type Dialog =
   | { kind: 'payment'; settlement?: Settlement; prefill?: Transfer }
 
 const TABS = [
-  { to: '.', label: 'Expenses', end: true },
-  { to: 'balances', label: 'Balances' },
+  { to: '.', label: 'Overview', end: true },
+  { to: 'expenses', label: 'Expenses' },
   { to: 'stats', label: 'Stats' },
   { to: 'settings', label: 'Settings' },
 ]
@@ -51,7 +51,7 @@ export function GroupPage() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-3xl">
       <Link to="/" className="mb-4 inline-flex items-center gap-1 rounded-lg text-sm text-muted hover:text-ink">
         <ChevronLeft className="size-4" /> All groups
       </Link>

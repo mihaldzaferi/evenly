@@ -60,7 +60,9 @@ export function settleUp(net: Iterable<[ID, number]>): Transfer[] {
   if (people.length === 0) return []
   const balanced = people.reduce((acc, [, a]) => acc + a, 0) === 0
   const groups = balanced && people.length <= OPTIMAL_LIMIT ? zeroSumPartition(people) : [people]
-  return groups.flatMap(greedy)
+  // List payments in the order people were given (usually member order), so they read predictably.
+  const order = new Map(people.map(([id], i) => [id, i]))
+  return groups.flatMap(greedy).sort((a, b) => order.get(a.from)! - order.get(b.from)! || order.get(a.to)! - order.get(b.to)!)
 }
 
 export function suggestedTransfers(group: Group): Transfer[] {

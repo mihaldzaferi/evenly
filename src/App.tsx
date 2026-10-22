@@ -1,8 +1,8 @@
 import { Route, Routes } from 'react-router'
 import { AppShell } from './components/AppShell'
-import { BalancesTab } from './pages/group/BalancesTab'
 import { ExpensesTab } from './pages/group/ExpensesTab'
 import { GroupPage } from './pages/group/GroupPage'
+import { OverviewTab } from './pages/group/OverviewTab'
 import { SettingsTab } from './pages/group/SettingsTab'
 import { StatsTab } from './pages/group/StatsTab'
 import { HomePage } from './pages/HomePage'
@@ -18,8 +18,8 @@ export default function App() {
         <Route path="new" element={<NewGroupPage />} />
         <Route path="import" element={<ImportPage />} />
         <Route path="g/:groupId" element={<GroupPage />}>
-          <Route index element={<ExpensesTab />} />
-          <Route path="balances" element={<BalancesTab />} />
+          <Route index element={<OverviewTab />} />
+          <Route path="expenses" element={<ExpensesTab />} />
           <Route path="stats" element={<StatsTab />} />
           <Route path="settings" element={<SettingsTab />} />
         </Route>

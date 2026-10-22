@@ -8,10 +8,14 @@ browser, and groups are shared as self-contained links.
 
 **Live demo:** https://mihaldzaferi.github.io/evenly/ (press *Try it with example data*)
 
-![Evenly: balances and settle-up suggestions for a weekend trip](docs/screenshot.png)
+![Evenly's overview: what you're owed, how it adds up, and the payments still needed](docs/screenshot.png)
 
 ## Features
 
+- **Always know where you stand.** The Overview leads with one line, like
+  "You're owed NOK 3,267.54. Chloé should pay you", and a receipt-style
+  breakdown of how that number adds up. Below it are the payments still
+  needed, everyone's balance, and the payments already made.
 - **Four ways to split.** Equally, by exact amounts, by percentage, or by
   shares ("2 shares for the double room, 1 for a single"), with a live
   preview of what each person owes.
@@ -19,7 +23,9 @@ browser, and groups are shared as self-contained links.
   rates for the expense date come from the European Central Bank (via the
   free [Frankfurter](https://frankfurter.dev) API), or you can type one in.
 - **Fewest payments to settle up.** Evenly finds the smallest set of
-  transfers that clears every balance, then you tick them off one by one.
+  transfers that clears every balance. Press *Mark as paid* (or *Mark
+  received*) as each one happens, and a progress bar shows how much has been
+  paid back.
 - **Share by link.** The whole group is compressed into the link itself, so
   a friend can open it and add the group to their own device. No server sees it.
 - **Stats.** Spending per day or month, by category, and who paid versus who
@@ -33,7 +39,7 @@ browser, and groups are shared as self-contained links.
 
 <p>
   <img src="docs/add-expense.png" alt="Adding an expense in euros, split by shares, inside a group kept in Norwegian kroner" width="58%">
-  <img src="docs/mobile.png" alt="The expense list on a phone" width="26%">
+  <img src="docs/mobile.png" alt="The overview on a phone" width="26%">
 </p>
 
 ![Stats for a shared flat in dark mode](docs/stats-dark.png)
@@ -127,7 +133,8 @@ src/
     csv.ts        CSV export
   store/        Zustand store (saved to localStorage) and toasts
   components/   Dialogs, charts, avatars and other shared UI
-  pages/        Home, new group, import, and the group page's four tabs
+  pages/        Home, new group, import, and the group tabs:
+                Overview, Expenses, Stats, Settings
 test/           Vitest suites
 ```
 

@@ -1,11 +1,12 @@
-import { Archive, ArrowRightLeft, Download, Globe2, Link2, Plus, Scale, Sparkles, Upload } from 'lucide-react'
+import { Archive, ArrowRightLeft, CircleCheck, Download, Globe2, Link2, Plus, Scale, Sparkles, Upload } from 'lucide-react'
 import { useRef } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { AvatarStack } from '../components/MemberChip'
 import { Money } from '../components/Money'
-import { summarize } from '../lib/balances'
+import { settleUp, summarize } from '../lib/balances'
 import { timeAgo } from '../lib/dates'
 import { downloadFile } from '../lib/download'
+import { memberLookup } from '../lib/members'
 import { groupStats } from '../lib/stats'
 import type { Group } from '../lib/types'
 import { InvalidDataError, parseGroup } from '../lib/validate'
@@ -63,7 +64,11 @@ export function HomePage() {
 
 function GroupCard({ group }: { group: Group }) {
   const stats = groupStats(group)
-  const me = group.meId ? summarize(group).find((s) => s.id === group.meId) : undefined
+  const summary = summarize(group)
+  const transfers = settleUp(summary.map((s) => [s.id, s.net]))
+  const me = summary.find((s) => s.id === group.meId)
+  const who = memberLookup(group)
+  const names = (ids: string[]) => ids.map((id) => who(id).member.name).join(' and ')
 
   return (
     <Link
@@ -86,21 +91,28 @@ function GroupCard({ group }: { group: Group }) {
         </div>
         <AvatarStack group={group} size={26} max={4} />
       </div>
-      {me && (
-        <p className="-mx-5 -mb-5 rounded-b-2xl border-t border-line bg-surface-2/60 px-5 py-2.5 text-[13px]">
-          {me.net === 0 ? (
-            <span className="text-ink-2">You’re settled up</span>
-          ) : me.net > 0 ? (
-            <>
-              You get back <Money amount={me.net} currency={group.currency} tone className="font-semibold" />
-            </>
-          ) : (
-            <>
-              You owe <Money amount={-me.net} currency={group.currency} className="font-semibold text-neg-text" />
-            </>
-          )}
-        </p>
-      )}
+      <p className="-mx-5 -mb-5 flex items-center gap-1.5 rounded-b-2xl border-t border-line bg-surface-2/60 px-5 py-2.5 text-[13px]">
+        {me && me.net < 0 ? (
+          <span>
+            You owe <Money amount={-me.net} currency={group.currency} className="font-semibold text-neg-text" />
+            <span className="text-muted"> · pay {names(transfers.filter((t) => t.from === me.id).map((t) => t.to))}</span>
+          </span>
+        ) : me && me.net > 0 ? (
+          <span>
+            You’re owed <Money amount={me.net} currency={group.currency} className="font-semibold text-pos-text" />
+            <span className="text-muted"> · from {names(transfers.filter((t) => t.to === me.id).map((t) => t.from))}</span>
+          </span>
+        ) : transfers.length === 0 ? (
+          <span className="flex items-center gap-1.5 text-ink-2">
+            <CircleCheck className="size-3.5" /> Everyone’s settled up
+          </span>
+        ) : (
+          <span className="text-ink-2">
+            {me ? 'You’re settled up · ' : ''}
+            {transfers.length} {transfers.length === 1 ? 'payment' : 'payments'} needed
+          </span>
+        )}
+      </p>
     </Link>
   )
 }

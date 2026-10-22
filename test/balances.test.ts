@@ -67,8 +67,8 @@ describe('settleUp', () => {
 
   it('pays creditors from debtors', () => {
     expect(settleUp([['a', 600], ['b', -150], ['c', -450]])).toEqual([
-      { from: 'c', to: 'a', amount: 450 },
       { from: 'b', to: 'a', amount: 150 },
+      { from: 'c', to: 'a', amount: 450 },
     ])
   })
 
