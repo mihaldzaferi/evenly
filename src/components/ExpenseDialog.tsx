@@ -4,7 +4,7 @@ import { CATEGORIES, guessCategory } from '../lib/categories'
 import { formatDay, today } from '../lib/dates'
 import { newId } from '../lib/ids'
 import { allocate, amountInputValue, convert, formatMoney, parseAmount } from '../lib/money'
-import { canFetchRate, fetchRate } from '../lib/rates'
+import { fetchRate } from '../lib/rates'
 import { checkSplit, participants, SPLIT_MODES } from '../lib/split'
 import type { CategoryId, Expense, Group, ID, Split, SplitMode } from '../lib/types'
 import { toast } from '../store/toast'
@@ -99,17 +99,18 @@ export function ExpenseDialog({ group, expense, onClose }: { group: Group; expen
   function getRate(cur: string, day: string) {
     rateRequest.current?.abort()
     if (cur === group.currency) return
-    if (!canFetchRate(cur, group.currency)) {
-      setRateStatus({ note: `No automatic rate for ${cur}. Type it in.` })
-      return
-    }
     const controller = new AbortController()
     rateRequest.current = controller
     setRateStatus({ loading: true })
     fetchRate(cur, group.currency, day, controller.signal)
       .then((r) => {
         setRateText(String(r.rate))
-        setRateStatus({ note: `European Central Bank rate for ${formatDay(r.date)}` })
+        const source = r.source === 'ecb' ? 'European Central Bank rate' : 'Market rate'
+        // Before March 2024 only today's market rate is available.
+        const fellBack = r.date > day && day < today()
+        setRateStatus({
+          note: fellBack ? `${source} from today. There’s no rate saved for ${formatDay(day)}.` : `${source} for ${formatDay(r.date)}`,
+        })
       })
       .catch((err: Error) => {
         if (err.name !== 'AbortError') setRateStatus({ note: 'Couldn’t fetch a rate. Type it in.' })
@@ -256,7 +257,7 @@ export function ExpenseDialog({ group, expense, onClose }: { group: Group; expen
               </label>
               <input
                 id="rate"
-                className="field num h-9 w-28"
+                className="field num h-9 w-40"
                 inputMode="decimal"
                 value={rateText}
                 onChange={(e) => {
@@ -266,22 +267,26 @@ export function ExpenseDialog({ group, expense, onClose }: { group: Group; expen
                 placeholder={rateStatus.loading ? 'Loading…' : 'Rate'}
               />
               <span className="text-ink-2">{group.currency}</span>
-              {canFetchRate(currency, group.currency) && (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => getRate(currency, date)}
-                  disabled={rateStatus.loading}
-                >
-                  <RefreshCw className={`size-3.5 ${rateStatus.loading ? 'animate-spin' : ''}`} /> Get rate
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => getRate(currency, date)}
+                disabled={rateStatus.loading}
+              >
+                <RefreshCw className={`size-3.5 ${rateStatus.loading ? 'animate-spin' : ''}`} /> Get rate
+              </button>
               {amount !== null && rate !== null && (
                 <span className="ml-auto font-medium">
                   = {formatMoney(convert(amount, currency, rate, group.currency), group.currency)}
                 </span>
               )}
             </div>
+            {rate !== null && rate < 0.1 && (
+              // Tiny rates (1 VND = 0.0004 NOK) are easier to check the other way round.
+              <p className="num mt-2 text-xs text-ink-2">
+                1 {group.currency} ≈ {(1 / rate).toLocaleString(undefined, { maximumFractionDigits: 2 })} {currency}
+              </p>
+            )}
             {rateStatus.note && <p className="mt-2 text-xs text-muted">{rateStatus.note}</p>}
             {showError(errors.rate)}
           </div>

@@ -25,9 +25,13 @@ browser, and groups are shared as self-contained links.
 - **Four ways to split.** Equally, by exact amounts, by percentage, or by
   shares ("2 shares for the double room, 1 for a single"), with a live
   preview of what each person owes.
-- **Any currency.** Log each expense in the currency you paid in. Exchange
-  rates for the expense date come from the European Central Bank (via the
-  free [Frankfurter](https://frankfurter.dev) API), or you can type one in.
+- **Any currency, with automatic rates.** Log each expense in the currency
+  you paid in, any of 160+, and the exchange rate for that day is fetched
+  for you. Major currencies use official European Central Bank rates (via
+  [Frankfurter](https://frankfurter.dev)). Everything else, from Thai baht to
+  Vietnamese dong, uses daily market rates from the free
+  [currency-api](https://github.com/fawazahmed0/exchange-api). You can always
+  type a rate yourself.
 - **Fewest payments to settle up.** Evenly finds the smallest set of
   transfers that clears every balance. Press *Mark as paid* (or *Mark
   received*) as each one happens, and a progress bar shows how much has been
@@ -179,9 +183,10 @@ any static host or sub-folder without changes.
 ## Privacy
 
 Evenly has no backend. Groups live in your browser's `localStorage`. The
-only network request the app makes is to fetch an exchange rate when you add
-an expense in a foreign currency, and that request contains only the two
-currency codes and a date.
+only network requests the app makes are for exchange rates when you add an
+expense in a foreign currency. They go to `api.frankfurter.dev`, or to
+`cdn.jsdelivr.net` with a `currency-api.pages.dev` fallback, and contain
+only currency codes and a date.
 
 ## License
 
