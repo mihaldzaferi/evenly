@@ -1,0 +1,157 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Colour tokens. Components use the semantic names (bg-surface, text-muted,
+ * …) so light and dark are defined once, here. The chart pair (--pos/--neg)
+ * is a colour-blind-safe blue/red, checked in both modes.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1;
+  --surface: #ffffff;
+  --surface-2: #f1f0ec;
+  --line: #e4e3dd;
+  --line-strong: #c3c2b7;
+  --ink: #141413;
+  --ink-2: #52514e;
+  --muted: #706e67;
+  --accent: #256abf;
+  --accent-hover: #1c5cab;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9f1fc;
+  --accent-text: #1c5cab;
+  --pos: #2a78d6;
+  --neg: #e34948;
+  --pos-text: #1c5cab;
+  --neg-text: #b8322f;
+  --series-2: #eb6834;
+  --shadow: 0 1px 2px rgb(20 20 19 / 0.05), 0 4px 16px rgb(20 20 19 / 0.04);
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --surface: #1a1a19;
+  --surface-2: #242423;
+  --line: #2c2c2a;
+  --line-strong: #45453f;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #9a988f;
+  --accent: #2a78d6;
+  --accent-hover: #3987e5;
+  --accent-ink: #ffffff;
+  --accent-soft: #172638;
+  --accent-text: #86b6ef;
+  --pos: #3987e5;
+  --neg: #e66767;
+  --pos-text: #86b6ef;
+  --neg-text: #f29191;
+  --series-2: #d95926;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-pos-text: var(--pos-text);
+  --color-neg-text: var(--neg-text);
+  --color-series-2: var(--series-2);
+  --shadow-card: var(--shadow);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg text-ink antialiased;
+    font-family: var(--font-sans);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button,
+  [role='button'],
+  summary {
+    cursor: pointer;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+  .btn {
+    @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply h-8 rounded-lg px-3 text-[13px];
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-ink hover:bg-accent-hover;
+  }
+  .btn-secondary {
+    @apply border border-line bg-surface text-ink hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply text-ink-2 hover:bg-surface-2 hover:text-ink;
+  }
+  .btn-danger {
+    @apply border border-line bg-surface text-neg-text hover:bg-surface-2;
+  }
+  .btn-icon {
+    @apply size-10 px-0;
+  }
+  .field {
+    @apply h-10 w-full min-w-0 rounded-xl border border-line bg-surface px-3 text-[15px] text-ink placeholder:text-muted hover:border-line-strong focus:border-accent focus:outline-none sm:text-sm;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-ink-2;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+dialog::backdrop {
+  background: rgb(10 10 10 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+dialog[open] {
+  animation: dialog-in 160ms ease-out;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
